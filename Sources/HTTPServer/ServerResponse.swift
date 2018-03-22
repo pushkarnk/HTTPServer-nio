@@ -20,28 +20,24 @@ public protocol ServerResponse: class {
 }
 
 public class HTTPServerResponse {
-    private let ctx: HTTPHandler 
-    private let request: HTTPRequestHead
-    private let handler: ChannelInboundHandler
+    private let ctx: ChannelHandlerContext 
+    private let handler: HTTPHandler 
 
-    public init(ctx: ChannelHandlerContext, request: HTTPRequestHead, handler: HTTPHandler) {
+    public init(ctx: ChannelHandlerContext, handler: HTTPHandler) {
         self.ctx = ctx
-        self.request = request
         self.handler = handler
     }
     
     public var headers = HTTPHeaders()
   
-    private var status = HTTPResponseStatus.ok.rawValue()
+    private var _statusCode = HTTPResponseStatus.ok
 
     public var statusCode: HTTPResponseStatus {
         get {
-            return HTTPResponseStatus(rawValue: status)
+            return _statusCode 
         }
         set(newValue) {
-            if let newValue = newValue {
-                status = newValue.rawValue
-            }
+            _statusCode = newValue
         }
     }
 
@@ -52,7 +48,9 @@ public class HTTPServerResponse {
     public func write(from data: Data) throws {
         var buffer = ctx.channel.allocator.buffer(capacity: 100)
         buffer.write(string: String(data: data, encoding: .utf8)!)
-        let response = HTTPResponseHead(version: request.version, status: .ok, headers: headers)
+        let request = handler.serverRequest!
+        let version = HTTPVersion(major: request.httpVersionMajor!, minor: request.httpVersionMinor!)
+        let response = HTTPResponseHead(version: version, status: .ok, headers: headers)
         ctx.write(handler.wrapOutboundOut(.head(response)), promise: nil)
         ctx.write(handler.wrapOutboundOut(.body(.byteBuffer(buffer))), promise: nil)
         ctx.writeAndFlush(handler.wrapOutboundOut(.end(nil)))
