@@ -53,7 +53,7 @@ public class HTTPServer {
     }
 }
 
-class HTTPHandler: ChannelInboundHandler {
+public class HTTPHandler: ChannelInboundHandler {
      let router: Router 
 
      public init(router: Router) {
@@ -61,6 +61,7 @@ class HTTPHandler: ChannelInboundHandler {
      }
 
      typealias InboundIn = HTTPServerRequestPart
+     typealias OutboundOut = HTTPServerResponsePart
 
      func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
          let request = self.unwrapInboundIn(data)
